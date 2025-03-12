@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordPress Page Viewer</title>
+  <style>
+    /* iframeでの表示を考慮したスタイル */
+    body { 
+      font-family: sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      overflow-x: hidden;
+    }
+    .content-wrapper {
+      padding: 10px;
+    }
+    .loading { 
+      color: #888; 
+    }
+    /* WordPressコンテンツのスタイル調整 */
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="content-wrapper">
+    <div id="page-content">
+      <h1 id="page-title" class="loading">読み込み中...</h1>
+      <div id="page-body" class="loading">コンテンツを読み込んでいます...</div>
+    </div>
+  </div>
+
+  <script>
+    // URLからスラッグを取得
+    const urlParams = new URLSearchParams(window.location.search);
+    const slug = urlParams.get('page') || 'page1';
+    const wpSite = urlParams.get('site') || 'https://exe.sub.jp/nft'; // サイトURLも指定可能に
+    
+    // WordPressのREST APIからデータを取得
+    fetch(`${wpSite}/wp-json/wp/v2/pages?slug=${slug}`)
+      .then(response => response.json())
+      .then(pages => {
+        if (pages.length > 0) {
+          const page = pages[0];
+          document.title = page.title.rendered;
+          document.getElementById('page-title').innerHTML = page.title.rendered;
+          document.getElementById('page-title').classList.remove('loading');
+          
+          // コンテンツを表示
+          let content = page.content.rendered;
+          
+          // iframeで表示する場合の調整（相対パスの修正など）
+          content = content.replace(/src="\/([^"]*)"/g, `src="${wpSite}/$1"`);
+          content = content.replace(/href="\/([^"]*)"/g, `href="${wpSite}/$1"`);
+          
+          document.getElementById('page-body').innerHTML = content;
+          document.getElementById('page-body').classList.remove('loading');
+          
+          // iframe親ウィンドウに高さを通知（レスポンシブ対応）
+          setTimeout(function() {
+            const height = document.body.scrollHeight;
+            if (window.parent && window.parent !== window) {
+              window.parent.postMessage({ 
+                type: 'resize', 
+                height: height 
+              }, '*');
+            }
+          }, 100);
+        } else {
+          document.getElementById('page-title').textContent = 'ページが見つかりません';
+          document.getElementById('page-title').classList.remove('loading');
+          document.getElementById('page-body').textContent = '指定されたページは存在しないか、アクセスできません。';
+          document.getElementById('page-body').classList.remove('loading');
+        }
+      })
+      .catch(error => {
+        console.error('エラーが発生しました:', error);
+        document.getElementById('page-title').textContent = 'エラーが発生しました';
+        document.getElementById('page-title').classList.remove('loading');
+        document.getElementById('page-body').textContent = 'データの取得中にエラーが発生しました。WordPressサイトがCORSを許可しているか確認してください。';
+        document.getElementById('page-body').classList.remove('loading');
+      });
+  </script>
+</body>
+</html>
