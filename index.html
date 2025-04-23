@@ -17,6 +17,8 @@
     }
     .content-wrapper {
       padding: 10px;
+      box-sizing: border-box;
+      width: 100%;
     }
     .loading { 
       color: #888; 
@@ -29,6 +31,11 @@
     /* タイトル要素を非表示にするスタイルを追加 */
     #page-title {
       display: none;
+    }
+    /* ボタンの横幅オーバーフロー対策 */
+    a.button_0129 {
+      box-sizing: border-box;
+      max-width: 100%;
     }
 </style>
 </head>
